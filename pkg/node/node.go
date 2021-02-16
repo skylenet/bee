@@ -52,8 +52,6 @@ import (
 	"github.com/ethersphere/bee/pkg/settlement/swap/chequebook"
 	"github.com/ethersphere/bee/pkg/settlement/swap/swapprotocol"
 	"github.com/ethersphere/bee/pkg/settlement/swap/transaction"
-	"github.com/ethersphere/bee/pkg/statestore/leveldb"
-	mockinmem "github.com/ethersphere/bee/pkg/statestore/mock"
 	"github.com/ethersphere/bee/pkg/storage"
 	"github.com/ethersphere/bee/pkg/swarm"
 	"github.com/ethersphere/bee/pkg/tags"
@@ -131,17 +129,9 @@ func NewBee(addr string, swarmAddress swarm.Address, publicKey ecdsa.PublicKey, 
 		tracerCloser:   tracerCloser,
 	}
 
-	var stateStore storage.StateStorer
-	if o.DataDir == "" {
-		stateStore = mockinmem.NewStateStore()
-		logger.Warning("using in-mem state store. no node state will be persisted")
-	} else {
-		stateStore, err = leveldb.NewStateStore(filepath.Join(o.DataDir, "statestore"), logger)
-		if err != nil {
-			return nil, fmt.Errorf("statestore: %w", err)
-		}
-	}
+	stateStore, err := InitStateStore(logger, o.DataDir)
 	b.stateStoreCloser = stateStore
+
 	addressbook := addressbook.New(stateStore)
 
 	var chequebookService chequebook.Service
